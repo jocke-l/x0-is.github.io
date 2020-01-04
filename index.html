@@ -1,0 +1,168 @@
+<!doctype html>
+<html>
+    <head>
+        <title>x0.is</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <meta name="theme-color" content="#161d2e">
+        <style>
+            * {
+                padding: 0;
+                margin: 0;
+            }
+
+            body {
+                background: #161d2e;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+            }
+
+            #spinningCube {
+                width: 100vw;
+                height: 100vh;
+            }
+        </style>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/6.2.5/math.min.js"
+                integrity="sha256-fWwwg2Pf3Ox5xhm9xCE7O+czkI2dSkqN6gUZumzGrx0="
+                crossorigin="anonymous"></script>
+        <script type="text/javascript">
+            (function () {
+                const DPI = window.devicePixelRatio || 1;
+                const CUBE_VERTICES = [
+                    [-1, -1, -1, 1],
+                    [1, -1, -1, 1],
+                    [1, 1, -1, 1],
+                    [-1, 1, -1, 1],
+
+                    [-1, -1, 1, 1],
+                    [1, -1, 1, 1],
+                    [1, 1, 1, 1],
+                    [-1, 1, 1, 1]
+                ];
+
+                function createPerspectiveMatrix(left, right, bottom, top, near, far) {
+                    return math.matrix([
+                        [2 * near / (right - left), 0, 0, 0],
+                        [0, 2 * near / (top - bottom), 0, 0],
+                        [(right + left) / (right - left), (top + bottom) / (top - bottom), -(far + near) / (far - near), -1],
+                        [0, 0, -(2 * far * near) / (far - near), 0]
+                    ]);
+                }
+
+                function createTranslationMatrix(x, y, z) {
+                    return math.matrix([
+                        [1, 0, 0, x],
+                        [0, 1, 0, y],
+                        [0, 0, 1, z],
+                        [0, 0, 0, 1]
+                    ]);
+                }
+
+                function createScaleMatrix(x, y, z) {
+                    return math.matrix([
+                        [x, 0, 0, 0],
+                        [0, y, 0, 0],
+                        [0, 0, z, 0],
+                        [0, 0, 0, 1]
+                    ])
+                }
+
+                function createRotationMatrix(x, y, z) {
+                    [x, y, z] = [x, y, z].map(function (item) { return item * math.pi / 180 });
+
+                    xMatrix = math.matrix([
+                        [1, 0, 0, 0],
+                        [0, math.cos(x), -math.sin(x), 0],
+                        [0, math.sin(x), math.cos(x), 0],
+                        [0, 0, 0, 1]
+                    ]);
+
+                    yMatrix = math.matrix([
+                        [math.cos(y), 0,  math.sin(y), 0],
+                        [0, 1, 0, 0],
+                        [-math.sin(y), 0, math.cos(y), 0],
+                        [0, 0, 0, 1]
+                    ]);
+
+                    zMatrix = math.matrix([
+                        [math.cos(z), -math.sin(z), 0, 0],
+                        [math.sin(z), math.cos(z), 0, 0],
+                        [0, 0, 1, 0],
+                        [0, 0, 0, 1]
+                    ]);
+
+                    return math.multiply(zMatrix, yMatrix, xMatrix);
+                }
+
+                function applyModelProjectionMatrix(vertices, modelProjectionMatrix) {
+                    return vertices.map(function (vertex) {
+                        return math.multiply(modelProjectionMatrix, vertex).toArray();
+                    });
+                }
+
+                function windowViewportTransformation(vertices) {
+                    return vertices.map(function (vertex) {
+                        return [
+                            (1 + vertex[0]) * window.innerWidth * DPI / 2,
+                            (1 - vertex[1]) * window.innerHeight * DPI / 2,
+                            0
+                         ];
+                    });
+                }
+
+                function drawPoints(points, canvasCtx) {
+                    canvasCtx.fillStyle = '#ffffff';
+                    points.forEach(function (point) {
+                        const [x, y] = [point[0], point[1]];
+                        canvasCtx.beginPath();
+                        canvasCtx.arc(x, y, 2.5, 0, math.tau);
+                        canvasCtx.fill();
+                    });
+                }
+
+                function setUpCanvas(canvas) {
+                    canvas.width = window.innerWidth * DPI;
+                    canvas.height = window.innerHeight * DPI;
+                }
+
+                window.onload = function () {
+                    const spinningCubeCanvas = document.getElementById('spinningCube');
+                    setUpCanvas(spinningCubeCanvas);
+
+                    let projectionMatrix = createPerspectiveMatrix(
+                        0, spinningCubeCanvas.width,
+                        spinningCubeCanvas.height, 0,
+                        0.1, 100
+                    );
+                    let viewMatrix = createScaleMatrix(500, 500, 500);
+                    let modelMatrix = math.identity(4);
+
+                    const rotationMatrix = createRotationMatrix(1, 0.5, 1);
+                    const canvasCtx = spinningCubeCanvas.getContext('2d');
+
+                    function drawSpinningCube() {
+                            let projectedVertices = applyModelProjectionMatrix(
+                                CUBE_VERTICES,
+                                math.multiply(projectionMatrix, viewMatrix, modelMatrix)
+                            );
+                            let points = windowViewportTransformation(projectedVertices);
+
+                            canvasCtx.clearRect(0, 0, spinningCubeCanvas.width, spinningCubeCanvas.height);
+                            drawPoints(points, canvasCtx);
+
+                            modelMatrix = math.multiply(rotationMatrix, modelMatrix);
+
+                            window.requestAnimationFrame(drawSpinningCube);
+                    }
+
+                    window.requestAnimationFrame(drawSpinningCube);
+                };
+            })();
+        </script>
+    </head>
+    <body>
+        <canvas id="spinningCube"></canvas>
+    </body>
+</html>

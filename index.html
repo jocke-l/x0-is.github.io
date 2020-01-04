@@ -129,13 +129,22 @@
 
                 window.onload = function () {
                     const spinningCubeCanvas = document.getElementById('spinningCube');
-                    setUpCanvas(spinningCubeCanvas);
+                    let projectionMatrix;
 
-                    let projectionMatrix = createPerspectiveMatrix(
-                        0, spinningCubeCanvas.width,
-                        spinningCubeCanvas.height, 0,
-                        0.1, 100
-                    );
+                    function resizeCanvas() {
+                        spinningCubeCanvas.width = window.innerWidth * DPI;
+                        spinningCubeCanvas.height = window.innerHeight * DPI;
+                        projectionMatrix = createPerspectiveMatrix(
+                            0, spinningCubeCanvas.width,
+                            spinningCubeCanvas.height, 0,
+                            0.1, 100
+                        );
+                    }
+
+                    window.addEventListener('resize', resizeCanvas, false);
+                    window.addEventListener('orientationchange', resizeCanvas, false);
+                    resizeCanvas();
+
                     let viewMatrix = createScaleMatrix(500, 500, 500);
                     let modelMatrix = math.identity(4);
 
@@ -143,18 +152,18 @@
                     const canvasCtx = spinningCubeCanvas.getContext('2d');
 
                     function drawSpinningCube() {
-                            let projectedVertices = applyModelProjectionMatrix(
-                                CUBE_VERTICES,
-                                math.multiply(projectionMatrix, viewMatrix, modelMatrix)
-                            );
-                            let points = windowViewportTransformation(projectedVertices);
+                        let projectedVertices = applyModelProjectionMatrix(
+                            CUBE_VERTICES,
+                            math.multiply(projectionMatrix, viewMatrix, modelMatrix)
+                        );
+                        let points = windowViewportTransformation(projectedVertices);
 
-                            canvasCtx.clearRect(0, 0, spinningCubeCanvas.width, spinningCubeCanvas.height);
-                            drawPoints(points, canvasCtx);
+                        canvasCtx.clearRect(0, 0, spinningCubeCanvas.width, spinningCubeCanvas.height);
+                        drawPoints(points, canvasCtx);
 
-                            modelMatrix = math.multiply(rotationMatrix, modelMatrix);
+                        modelMatrix = math.multiply(rotationMatrix, modelMatrix);
 
-                            window.requestAnimationFrame(drawSpinningCube);
+                        window.requestAnimationFrame(drawSpinningCube);
                     }
 
                     window.requestAnimationFrame(drawSpinningCube);

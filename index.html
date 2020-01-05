@@ -70,7 +70,7 @@
                 }
 
                 function createRotationMatrix(x, y, z) {
-                    [x, y, z] = [x, y, z].map(function (item) { return item * math.pi / 180 });
+                    [x, y, z] = [x, y, z].map(item => item * math.pi / 180);
 
                     xMatrix = math.matrix([
                         [1, 0, 0, 0],
@@ -96,20 +96,11 @@
                     return math.multiply(zMatrix, yMatrix, xMatrix);
                 }
 
-                function applyModelProjectionMatrix(vertices, modelProjectionMatrix) {
-                    return vertices.map(function (vertex) {
-                        return math.multiply(modelProjectionMatrix, vertex).toArray();
-                    });
-                }
-
                 function windowViewportTransformation(vertices) {
-                    return vertices.map(function (vertex) {
-                        return [
-                            (1 + vertex[0]) * window.innerWidth * DPI / 2,
-                            (1 - vertex[1]) * window.innerHeight * DPI / 2,
-                            0
-                         ];
-                    });
+                    return vertices.map(vertex => [
+                        (1 + vertex[0]) * window.innerWidth * DPI / 2,
+                        (1 - vertex[1]) * window.innerHeight * DPI / 2
+                    ]);
                 }
 
                 function drawPoints(points, canvasCtx) {
@@ -120,11 +111,6 @@
                         canvasCtx.arc(x, y, 2.5, 0, math.tau);
                         canvasCtx.fill();
                     });
-                }
-
-                function setUpCanvas(canvas) {
-                    canvas.width = window.innerWidth * DPI;
-                    canvas.height = window.innerHeight * DPI;
                 }
 
                 window.onload = function () {
@@ -140,23 +126,22 @@
                             0.1, 100
                         );
                     }
-
                     window.addEventListener('resize', resizeCanvas, false);
                     window.addEventListener('orientationchange', resizeCanvas, false);
                     resizeCanvas();
 
                     let viewMatrix = createScaleMatrix(500, 500, 500);
+                    let viewProjectionMatrix = math.multiply(projectionMatrix, viewMatrix);
                     let modelMatrix = math.identity(4);
 
                     const rotationMatrix = createRotationMatrix(1, 0.5, 1);
                     const canvasCtx = spinningCubeCanvas.getContext('2d');
 
                     function drawSpinningCube() {
-                        let projectedVertices = applyModelProjectionMatrix(
-                            CUBE_VERTICES,
-                            math.multiply(projectionMatrix, viewMatrix, modelMatrix)
+                        const projectedVertices = CUBE_VERTICES.map(
+                            vertex => math.multiply(viewProjectionMatrix, modelMatrix, vertex).toArray()
                         );
-                        let points = windowViewportTransformation(projectedVertices);
+                        const points = windowViewportTransformation(projectedVertices);
 
                         canvasCtx.clearRect(0, 0, spinningCubeCanvas.width, spinningCubeCanvas.height);
                         drawPoints(points, canvasCtx);

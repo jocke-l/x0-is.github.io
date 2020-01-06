@@ -31,15 +31,41 @@
             (function () {
                 const DPI = window.devicePixelRatio || 1;
                 const CUBE_VERTICES = [
-                    [-1, -1, -1, 1],
-                    [1, -1, -1, 1],
+                    // top
+                    [-1, 1, 1, 1],
+                    [1, 1, 1, 1],
                     [1, 1, -1, 1],
                     [-1, 1, -1, 1],
 
-                    [-1, -1, 1, 1],
+                    // front
                     [1, -1, 1, 1],
                     [1, 1, 1, 1],
-                    [-1, 1, 1, 1]
+                    [-1, 1, 1, 1],
+                    [-1, -1, 1, 1],
+
+                    // right
+                    [1, 1, -1, 1],
+                    [1, 1, 1, 1],
+                    [1, -1, 1, 1],
+                    [1, -1, -1, 1],
+
+                    // left
+                    [-1, -1, 1, 1],
+                    [-1, 1, 1, 1],
+                    [-1, 1, -1, 1],
+                    [-1, -1, -1, 1],
+
+                    // bottom
+                    [1, -1, 1, 1],
+                    [-1, -1, 1, 1],
+                    [-1, -1, -1, 1],
+                    [1, -1, -1, 1],
+
+                    // back
+                    [1, 1, -1, 1],
+                    [1, -1, -1, 1],
+                    [-1, -1, -1, 1],
+                    [-1, 1, -1, 1],
                 ];
 
                 function createPerspectiveMatrix(left, right, bottom, top, near, far) {
@@ -113,12 +139,35 @@
 
                 function drawPoints(points, canvasCtx) {
                     canvasCtx.fillStyle = '#ffffff';
-                    points.forEach(function (point) {
+                    points.forEach(point => {
                         const [x, y] = [point[0], point[1]];
                         canvasCtx.beginPath();
                         canvasCtx.arc(x, y, 2.5, 0, math.tau);
                         canvasCtx.fill();
                     });
+                }
+
+                function drawLines(lines, canvasCtx) {
+                    canvasCtx.strokeStyle = '#ffffff';
+                    for (let i = 0; i < lines.length; i += 2) {
+                        canvasCtx.beginPath();
+                        canvasCtx.moveTo(lines[i][0], lines[i][1])
+                        canvasCtx.lineTo(lines[i + 1][0], lines[i + 1][1])
+                        canvasCtx.stroke();
+                    }
+                }
+
+                function drawPolygons(vertices, numVertices, canvasCtx) {
+                    canvasCtx.strokeStyle = '#ffffff';
+                    for (let i = 0; i < vertices.length; i += numVertices) {
+                        canvasCtx.beginPath();
+                        canvasCtx.moveTo(vertices[i][0], vertices[i][1])
+                        for (let j = 1; j < numVertices; j++) {
+                            canvasCtx.lineTo(vertices[i + j][0], vertices[i + j][1])
+                        }
+                        canvasCtx.closePath();
+                        canvasCtx.stroke();
+                    }
                 }
 
                 window.onload = function () {
@@ -144,10 +193,10 @@
                         const projectedVertices = CUBE_VERTICES.map(
                             vertex => math.multiply(vertex, modelMatrix, viewMatrix, projectionMatrix).toArray()
                         );
-                        const points = windowViewportTransformation(perspectiveDivide(projectedVertices));
+                        const polygons = windowViewportTransformation(perspectiveDivide(projectedVertices));
 
                         canvasCtx.clearRect(0, 0, spinningCubeCanvas.width, spinningCubeCanvas.height);
-                        drawPoints(points, canvasCtx);
+                        drawPolygons(polygons, 4, canvasCtx);
 
                         modelMatrix = math.multiply(rotationMatrix, modelMatrix);
 
